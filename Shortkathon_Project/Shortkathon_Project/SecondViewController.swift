@@ -87,18 +87,14 @@ class SecondViewController: UIViewController {
         if let lastTextField = stackView.arrangedSubviews.last as? UITextField {
             if let text = lastTextField.text, !text.isEmpty {
                 personList.append(text)
-                print("인원 목록: \(personList)")
             } else {
-                print("입력해주세요.")
                 return
             }
         }
         
-        let personCount = stackView.arrangedSubviews.count + 1
         let textField = UITextField()
-        textField.placeholder = "인원 \(personCount) : "
+        textField.placeholder = "인원 \(stackView.arrangedSubviews.count + 1):"
         textField.borderStyle = .roundedRect
-        
         stackView.addArrangedSubview(textField)
     }
     
@@ -106,16 +102,9 @@ class SecondViewController: UIViewController {
         for name in personList {
             DataStruct.names.append(Name(name: name))
         }
-        print("저장된 이름들: \(DataStruct.names)")
         
-        // ThirdViewController 생성 및 NavigationController에 래핑
         let thirdVC = ThirdViewController()
-        let navigationController = UINavigationController(rootViewController: thirdVC)
-        
-        // 모달 스타일 설정
-        navigationController.modalPresentationStyle = .fullScreen
-        
-        // 화면 전환
-        present(navigationController, animated: true, completion: nil)
+        thirdVC.modalPresentationStyle = .fullScreen
+        present(thirdVC, animated: true, completion: nil)
     }
 }
