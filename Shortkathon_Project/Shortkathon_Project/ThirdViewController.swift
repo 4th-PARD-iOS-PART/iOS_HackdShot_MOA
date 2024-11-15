@@ -23,24 +23,24 @@ class ThirdViewController: UIViewController {
     let addTaskButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("할 일 추가", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .blue
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = .gray
         button.layer.cornerRadius = 8
         return button
     }()
     
     let completeButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("완료", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .green
+        button.setTitle("프로젝트 등록하기", for: .normal)
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = UIColor(red: 185/255.0, green: 255/255.0, blue: 50/255.0, alpha: 1.0)
         button.layer.cornerRadius = 8
         return button
     }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = .black
         self.title = "할 일 입력"
         
         setupViews()
@@ -68,41 +68,66 @@ class ThirdViewController: UIViewController {
         
         addTaskButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
+
             addTaskButton.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
-            addTaskButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            addTaskButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             addTaskButton.widthAnchor.constraint(equalToConstant: 120),
-            addTaskButton.heightAnchor.constraint(equalToConstant: 40)
+            addTaskButton.heightAnchor.constraint(equalToConstant: 40),
         ])
         
         completeButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            completeButton.topAnchor.constraint(equalTo: addTaskButton.bottomAnchor, constant: 20),
+            completeButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             completeButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            completeButton.widthAnchor.constraint(equalToConstant: 120),
-            completeButton.heightAnchor.constraint(equalToConstant: 40)
+            completeButton.widthAnchor.constraint(equalToConstant: 350), // Adjust width as needed
+            completeButton.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
     
+    private func createDoneToolbar() -> UIToolbar {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        
+        let doneButton = UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.setItems([doneButton], animated: false)
+        
+        return toolbar
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true) // 키패드를 닫음
+    }
+    
     @objc private func addTaskField() {
+        // 현재 텍스트필드에 입력된 내용을 taskList에 추가
         if let lastTextField = stackView.arrangedSubviews.last as? UITextField {
             if let text = lastTextField.text, !text.isEmpty {
                 taskList.append(text)
-            } else {
-                return
             }
         }
-        
+
+        // 새로운 텍스트필드 추가
         let textField = UITextField()
         textField.placeholder = "할 일 \(stackView.arrangedSubviews.count + 1):"
         textField.borderStyle = .roundedRect
+        textField.backgroundColor = UIColor(white: 0.2, alpha: 1)
+        textField.textColor = .white
+        textField.inputAccessoryView = createDoneToolbar()  // 툴바 추가
         stackView.addArrangedSubview(textField)
     }
-    
+
     @objc private func showConfirmationAlert() {
+        // 할 일을 추가한 후 확인 알림 표시
         let alert = UIAlertController(title: "확인", message: "할 일 입력을 완료하셨습니까?", preferredStyle: .alert)
         
         let yesAction = UIAlertAction(title: "예", style: .default) { _ in
             self.saveTasksToDataStruct()
+
+            if let navigationController = self.navigationController {
+                if let viewController = navigationController.viewControllers.first(where: { $0 is ViewController }) {
+                    navigationController.popToViewController(viewController, animated: true)
+                }
+            }
         }
         
         let noAction = UIAlertAction(title: "아니오", style: .cancel, handler: nil)
@@ -115,10 +140,10 @@ class ThirdViewController: UIViewController {
     
     private func saveTasksToDataStruct() {
         for task in taskList {
-            DataStruct.tasks.append(Task(taskName: task))
+            if !task.isEmpty {
+                DataStruct.tasks.append(Task(taskName: task))
+            }
         }
-        
-        // 데이터 저장 후 루트 뷰 컨트롤러로 돌아가기
         view.window?.rootViewController?.dismiss(animated: true, completion: nil)
     }
 }
