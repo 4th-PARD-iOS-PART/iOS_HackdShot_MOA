@@ -73,7 +73,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        tableData = DataStruct.tasks.map { $0.taskName }
+        
+        // DataStruct.projects 배열의 projectName을 가져와 tableData에 할당
+        tableData = DataStruct.projects.map { $0.projectName }
+        
+        // 테이블 뷰 갱신
         tableView.reloadData()
     }
     
