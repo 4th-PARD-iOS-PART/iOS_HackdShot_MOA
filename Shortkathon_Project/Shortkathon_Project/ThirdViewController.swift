@@ -23,8 +23,8 @@ class ThirdViewController: UIViewController {
     let addTaskButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("할 일 추가", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .blue
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = .gray
         button.layer.cornerRadius = 8
         return button
     }()
@@ -32,15 +32,15 @@ class ThirdViewController: UIViewController {
     let completeButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("완료", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .green
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = .gray
         button.layer.cornerRadius = 8
         return button
     }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = .black
         self.title = "할 일 입력"
         
         setupViews()
@@ -84,25 +84,40 @@ class ThirdViewController: UIViewController {
     }
     
     @objc private func addTaskField() {
+        // 현재 텍스트필드에 입력된 내용을 taskList에 추가
         if let lastTextField = stackView.arrangedSubviews.last as? UITextField {
             if let text = lastTextField.text, !text.isEmpty {
                 taskList.append(text)
-            } else {
-                return
             }
         }
-        
+
+        // 새로운 텍스트필드 추가
         let textField = UITextField()
         textField.placeholder = "할 일 \(stackView.arrangedSubviews.count + 1):"
         textField.borderStyle = .roundedRect
+        textField.backgroundColor = UIColor(white: 0.2, alpha: 1)
+        textField.textColor = .white
         stackView.addArrangedSubview(textField)
     }
-    
+
     @objc private func showConfirmationAlert() {
+        // 할 일을 추가한 후 확인 알림 표시
         let alert = UIAlertController(title: "확인", message: "할 일 입력을 완료하셨습니까?", preferredStyle: .alert)
         
         let yesAction = UIAlertAction(title: "예", style: .default) { _ in
+            // 마지막 할 일이 비어있지 않다면 추가
+            if let lastTextField = self.stackView.arrangedSubviews.last as? UITextField,
+               let text = lastTextField.text, !text.isEmpty {
+                self.taskList.append(text)
+            }
+            
             self.saveTasksToDataStruct()
+            
+            if let navigationController = self.navigationController {
+                if let viewController = navigationController.viewControllers.first(where: { $0 is ViewController }) {
+                    navigationController.popToViewController(viewController, animated: true)
+                }
+            }
         }
         
         let noAction = UIAlertAction(title: "아니오", style: .cancel, handler: nil)
@@ -112,13 +127,12 @@ class ThirdViewController: UIViewController {
         
         present(alert, animated: true, completion: nil)
     }
-    
     private func saveTasksToDataStruct() {
         for task in taskList {
-            DataStruct.tasks.append(Task(taskName: task))
+            if !task.isEmpty {
+                DataStruct.tasks.append(Task(taskName: task))
+            }
         }
-        
-        // 데이터 저장 후 루트 뷰 컨트롤러로 돌아가기
         view.window?.rootViewController?.dismiss(animated: true, completion: nil)
     }
 }

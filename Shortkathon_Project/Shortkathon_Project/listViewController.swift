@@ -1,30 +1,22 @@
-//
-//  listViewController.swift
-//  Shortkathon_Project
-//
-//  Created by 도현학 on 11/16/24.
-//
-
 import UIKit
 
 class listViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-
+    
     // 프로젝트를 받는 변수
     var project: Project?
-
+    
     private var tasks: [String] = []
     private var tableView: UITableView!
     private var editButton: UIButton!
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        view.backgroundColor = .white
+        view.backgroundColor = .black  // 배경 색을 검은색으로 설정
         
         setupNavigationBar()
         setupTableView()
         setupEditButton()
-        
         
         loadTasksForProject()
     }
@@ -41,6 +33,9 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
         tableView.delegate = self
         view.addSubview(tableView)
         
+        // 테이블 뷰의 배경 색을 검은색으로 설정
+        tableView.backgroundColor = .black
+        
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -51,9 +46,9 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     private func setupEditButton() {
         editButton = UIButton(type: .system)
-        editButton.setTitle("Edit Tasks", for: .normal)
-        editButton.backgroundColor = .systemBlue
-        editButton.setTitleColor(.white, for: .normal)
+        editButton.setTitle("회의 종료하기", for: .normal)
+        editButton.backgroundColor = UIColor(red: 185/255, green: 255/255, blue: 50/255, alpha: 1)
+        editButton.setTitleColor(.black, for: .normal)
         editButton.layer.cornerRadius = 10
         editButton.translatesAutoresizingMaskIntoConstraints = false
         
@@ -76,8 +71,14 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
             return
         }
         
-        // projectName이 설정된 경우에만 Task를 필터링합니다.
-        tasks = DataStruct.tasks.filter { $0.taskName.contains(projectName) }.map { $0.taskName }
+        // 디버깅을 위한 출력
+        print("Project Name: \(projectName)")
+        print("DataStruct Tasks: \(DataStruct.tasks.map { $0.taskName ?? "nil" })")
+        
+        // DataStruct.tasks에서 필터링 없이 모든 할 일을 그대로 tasks 배열에 할당
+        tasks = DataStruct.tasks.map { $0.taskName ?? "" } // taskName이 nil인 경우 빈 문자열로 처리
+        
+        // 테이블을 업데이트
         tableView.reloadData()
     }
     
@@ -88,6 +89,10 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @objc private func openEditTasksView() {
         let editTasksVC = EditModalViewController()
         editTasksVC.modalPresentationStyle = .formSheet
+        
+        // 모달창 배경 색을 검은색으로 설정
+        editTasksVC.view.backgroundColor = .black
+        
         editTasksVC.tasks = tasks
         
         // 수정 완료 콜백 설정
@@ -102,12 +107,20 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // MARK: - UITableViewDataSource
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        print("\(tasks.count)")
         return tasks.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "taskCell") ?? UITableViewCell(style: .default, reuseIdentifier: "taskCell")
+        
+        cell.backgroundColor = .gray
+        
+        cell.textLabel?.textColor = .white
+        
         cell.textLabel?.text = tasks[indexPath.row]
+        
+        print("\(tasks[indexPath.row])")
         return cell
     }
     
@@ -116,12 +129,17 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        let alert = UIAlertController(title: "Delete Task", message: "Are you sure you want to delete \(tasks[indexPath.row])?", preferredStyle: .alert)
+        // DataStruct.names에서 랜덤으로 name을 가져옵니다.
+        let randomIndex = Int(arc4random_uniform(UInt32(DataStruct.names.count)))
+        let randomName = DataStruct.names[randomIndex].name // 랜덤으로 선택된 name
         
-        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+        // 선택된 랜덤 name을 alert에 메시지로 표시
+        let alert = UIAlertController(title: "회의 정리", message: "이번 안건의 정리자는 \(randomName) 님 입니다.", preferredStyle: .alert)
+        
+        let deleteAction = UIAlertAction(title: "온전히 이해함", style: .destructive) { [weak self] _ in
             self?.deleteTask(at: indexPath.row)
         }
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        let cancelAction = UIAlertAction(title: "이해하지 못함", style: .cancel, handler: nil)
         
         alert.addAction(deleteAction)
         alert.addAction(cancelAction)
