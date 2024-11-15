@@ -87,19 +87,14 @@ class ThirdViewController: UIViewController {
         if let lastTextField = stackView.arrangedSubviews.last as? UITextField {
             if let text = lastTextField.text, !text.isEmpty {
                 taskList.append(text)
-                print("할 일 목록: \(taskList)")
             } else {
-                print("입력해주세요.")
                 return
             }
         }
         
-        // 새로운 텍스트 필드 추가
-        let taskCount = stackView.arrangedSubviews.count + 1
         let textField = UITextField()
-        textField.placeholder = "할 일 \(taskCount) : "
+        textField.placeholder = "할 일 \(stackView.arrangedSubviews.count + 1):"
         textField.borderStyle = .roundedRect
-        
         stackView.addArrangedSubview(textField)
     }
     
@@ -122,6 +117,8 @@ class ThirdViewController: UIViewController {
         for task in taskList {
             DataStruct.tasks.append(Task(taskName: task))
         }
-        print("저장된 할 일들: \(DataStruct.tasks)")
+        
+        // 데이터 저장 후 루트 뷰 컨트롤러로 돌아가기
+        view.window?.rootViewController?.dismiss(animated: true, completion: nil)
     }
 }
