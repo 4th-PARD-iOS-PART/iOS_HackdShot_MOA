@@ -1,77 +1,164 @@
 //
 //  APIService.swift
-//  Shortkathon_Project
+//  6th_hw_HyeonhakDo
 //
-//  Created by 현승훈 on 11/16/24.
-//
-
-//
-//  APIService.swift
-//  Server
-//
-//  Created by 김도원 on 11/15/24.
+//  Created by 도현학 on 10/30/24.
 //
 
 import Foundation
 
-// 서버와 통신할 때 사용되는 기본 사용자 모델이에요!
-struct User: Codable {
-    let id: Int?
-    let name: String
-    let part: String
-    let age: Int
-}
-
-struct UpdateUserRequest: Codable {
-    let name: String
-    let part: String
-    let age: String
-}
-
-// 서버로부터의 성공/실패 응답을 처리하는 구조체입니당:)
-struct APIResponse: Codable {
-    let success: Bool
-}
-
 class APIService {
-    static let shared = APIService()
-    private let networkManager = NetworkManager.shared
+//    var users: [MemberData] = []
     
-    private init() {}
-    
-    // MARK: - 사용자 목록 조회 메서드에요~
-    // 특정 파트의 사용자들을 가져오는 GET 요청이에요!
-    // @escaping은 네트워크 작업은 시간이 걸리기에 함수가 끝나도 나중에 결과를 처리해야되기 때문에 존재!
-    func getUsers(part: String, completion: @escaping (Result<[User], Error>) -> Void) {
-        networkManager.request("/user",
-                             method: "GET",
-                             parameters: ["part": part],
-                             completion: completion)
+    // GET FUNC
+    func getRequest<T: Decodable>(completion: @escaping (Result<T, Error>) -> Void) {
+        guard let url = NetworkManager.shared.makeURL(part: "all", id: 0) else {
+            print("🧨 Invalid URL")
+            completion(.failure(NetworkError.noData))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("🧨 Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NetworkError.noData))
+                return
+            }
+            do {
+                let decodeData = try JSONDecoder().decode(T.self, from: data)
+                completion(.success(decodeData))
+            } catch {
+                completion(.failure(NetworkError.decodingError(error)))
+            }
+        }.resume()
     }
     
-    // MARK: - 새로운 사용자 생성 메서드에요~
-    // 새로운 사용자를 생성하는 POST 요청이에요!
-    func createUser(user: User, completion: @escaping (Result<APIResponse, Error>) -> Void) {
-        networkManager.request("/user",
-                             method: "POST",
-                             body: user,
-                             completion: completion)
+    // POST FUNC
+    func postRequest<T: Codable>(body: T, completion: @escaping (Result<T, Error>) -> Void) {
+        guard let url = NetworkManager.shared.makeURL(part: "POST", id: 0) else {
+            print("🧨 Invalid URL")
+            completion(.failure(NetworkError.noData))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(body)
+        } catch {
+            print("🧨 Encoding error: \(error)")
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            if let data = data {
+                if let dataString = String(data: data, encoding: .utf8) {
+                    print("Success with data: \(dataString)")
+                    completion(.success(body))
+                } else {
+                    print("🧨 Unable to decode data using UTF-8 encoding")
+                    completion(.failure(NetworkError.noData))
+                }
+            }
+        }.resume()
     }
-    
-    // MARK: - 사용자 정보 업데이트 메서드에요~
-    // 특정 ID의 사용자 정보를 수정하는 PATCH 요청이에요!
-    func updateUser(id: Int, user: UpdateUserRequest, completion: @escaping (Result<APIResponse, Error>) -> Void) {
-        networkManager.request("/user/\(id)",
-                             method: "PATCH",
-                             body: user,
-                             completion: completion)
+
+    // PATCH FUNC
+    func patchRequest<T: Codable>(id: Int?, body: T, completion: @escaping (Result<T, Error>) -> Void) {
+        guard let url = NetworkManager.shared.makeURL(part: "PATCH", id: id) else {
+            print("🧨 Invalid URL")
+            completion(.failure(NetworkError.noData))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(body)
+        } catch {
+            print("🧨 Encoding error: \(error)")
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("🧨 Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+
+            if let data = data, !data.isEmpty {
+                do {
+                    let decodeData = try JSONDecoder().decode(T.self, from: data)
+                    completion(.success(decodeData))
+                } catch {
+                    print("🧨 Decoding error")
+                    if let dataString = String(data: data, encoding: .utf8) {
+                        print("Received data from server: \(dataString)")
+                    }
+                    completion(.failure(NetworkError.decodingError(error)))
+                }
+            } else {
+                print("Received empty response from server")
+                completion(.success(body))
+            }
+        }.resume()
     }
-    
-    // MARK: - 사용자 삭제 메서드에요~
-    // 특정 ID의 사용자를 삭제하는 DELETE 요청이에요!
-    func deleteUser(id: Int, completion: @escaping (Result<APIResponse, Error>) -> Void) {
-        networkManager.request("/user/\(id)",
-                             method: "DELETE",
-                             completion: completion)
+
+    // DELETE FUNC
+    func deleteRequest<T: Decodable>(id: Int?, completion: @escaping (Result<T?, Error>) -> Void) { // T?는 success(nil)을 위해서 : nodata인 경우에도 성공으로 간주하기 위해
+        guard let url = NetworkManager.shared.makeURL(part: "DELETE", id: id) else {
+            print("🧨 Invalid URL")
+            completion(.failure(NetworkError.noData))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("🧨 Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let data = data, !data.isEmpty {
+                do {
+                    let decodedData = try JSONDecoder().decode(T.self, from: data)
+                    completion(.success(decodedData))
+                } catch {
+                    print("🧨 Decoding error: \(error)")
+                    completion(.failure(NetworkError.decodingError(error)))
+                }
+            } else {
+                print("🧨 No data")
+                completion(.success(nil))
+            }
+        }.resume()
     }
+}
+
+enum NetworkError: Error {
+    case noData
+    case decodingError(Error)
 }
