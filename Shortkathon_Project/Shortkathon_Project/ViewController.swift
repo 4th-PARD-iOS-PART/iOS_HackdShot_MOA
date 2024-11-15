@@ -34,7 +34,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         return tableView
     }()
     
-    private var tableData: [String] = []
+    private var tableData: [Project] = []  // Project 객체의 배열로 선언
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -69,13 +69,16 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             myButton.widthAnchor.constraint(equalToConstant: 120),
             myButton.heightAnchor.constraint(equalToConstant: 40)
         ])
+        
+        // 로컬 데이터를 불러와 테이블 뷰에 표시
+        tableData = DataStruct.projects
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         // DataStruct.projects 배열의 projectName을 가져와 tableData에 할당
-        tableData = DataStruct.projects.map { $0.projectName }
+        tableData = DataStruct.projects
         
         // 테이블 뷰 갱신
         tableView.reloadData()
@@ -87,13 +90,35 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         present(secondVC, animated: true, completion: nil)
     }
     
+    // MARK: - UITableViewDataSource
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return tableData.count
     }
-    
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = tableData[indexPath.row]
+        cell.textLabel?.text = tableData[indexPath.row].projectName
         return cell
+    }
+    
+    // MARK: - UITableViewDelegate
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        // 선택한 프로젝트를 listViewController에 전달
+        let selectedProject = tableData[indexPath.row]
+        let listVC = listViewController()
+        listVC.project = selectedProject
+        
+        // navigationController가 있는지 확인하고, 없으면 새로 생성하여 푸시
+        if let navigationController = navigationController {
+            navigationController.pushViewController(listVC, animated: true)
+        } else {
+            // UINavigationController로 감싼 후 화면을 표시
+            let navController = UINavigationController(rootViewController: listVC)
+            present(navController, animated: true, completion: nil)
+        }
     }
 }
