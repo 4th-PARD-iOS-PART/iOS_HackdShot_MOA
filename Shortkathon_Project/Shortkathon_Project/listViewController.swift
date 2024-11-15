@@ -7,102 +7,114 @@
 
 import UIKit
 
-class listViewController: UIViewController {
+class listViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
-//    var task: InfoData?
+    // Task 데이터 소스
+    private var tasks: [String] = ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]
     
-    let projectLabel = UILabel()
-    
-    let editButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Edit", for: .normal)
-        button.setTitleColor(.blue, for: .normal)
-        return button
-    }()
-    let deleteButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Delete", for: .normal)
-        button.setTitleColor(.red, for: .normal)
-        return button
-    }()
+    private var tableView: UITableView!
+    private var editButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         view.backgroundColor = .white
         
-//        editButton.addTarget(self, action: #selector(pressEditButton), for: .touchUpInside)
-//        deleteButton.addTarget(self, action: #selector(pressDeleteButton), for: .touchUpInside)
-//        
-//        if let item = member {
-//            nameLabel.text = "\(item.name)"
-//            nameLabel.font = .systemFont(ofSize: 40)
-//        }
-        
-        view.addSubview(projectLabel)
-        view.addSubview(editButton)
-        view.addSubview(deleteButton)
+        setupNavigationBar()
+        setupTableView()
+        setupEditButton()
     }
     
-    func setConstraint() {
-        projectLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        editButton.translatesAutoresizingMaskIntoConstraints = false
-        deleteButton.translatesAutoresizingMaskIntoConstraints = false
+    private func setupNavigationBar() {
+        title = "Task List"
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .done, target: self, action: #selector(close))
+    }
+    
+    private func setupTableView() {
+        tableView = UITableView()
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            projectLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            projectLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
-            
-            editButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            editButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            deleteButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            deleteButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -60)
         ])
     }
-
-//    // For updating data
-//    @objc func pressEditButton() {
-//        guard var member = member else { return }
-//        // temperature for test
-//        // if you want to input data for editing, use input text and assign these values to member
-//        member.name = "TEST"
-//        member.age = 30
-//        member.part = "TEST"
-//
-//        let APIService = APIService()
-//        APIService.patchRequest(id: member.id, body: member) { (result: Result<MemberData, Error>) in
-//            DispatchQueue.main.async {
-//                switch result {
-//                    case .success:
-//                        print("Success PATCH")
-//                        NotificationCenter.default.post(name: .memberNotice, object: nil)
-//                        self.dismiss(animated: true)
-//                    case .failure(let error):
-//                        print("Failed Edit: \(error.localizedDescription)")
-//                }
-//            }
-//        }
-//    }
-//
-//    // For deleting data
-//    @objc func pressDeleteButton() {
-//        guard let member = member else { return }
-//        APIService().deleteRequest(id: member.id) { (result: Result<MemberData?, Error>) in
-//            DispatchQueue.main.async {
-//                switch result {
-//                    case .success(let response):
-//                        print("success")
-//                        NotificationCenter.default.post(name: .memberNotice, object: nil)
-//                        self.dismiss(animated: true)
-//                    case .failure(let error):
-//                        print("Failed to delete member: \(error.localizedDescription)")
-//                }
-//            }
-//        }
-//    }
-//
-
+    
+    private func setupEditButton() {
+        editButton = UIButton(type: .system)
+        editButton.setTitle("Edit Tasks", for: .normal)
+        editButton.backgroundColor = .systemBlue
+        editButton.setTitleColor(.white, for: .normal)
+        editButton.layer.cornerRadius = 10
+        editButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(editButton)
+        
+        NSLayoutConstraint.activate([
+            editButton.topAnchor.constraint(equalTo: tableView.bottomAnchor, constant: 10),
+            editButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            editButton.widthAnchor.constraint(equalToConstant: 150),
+            editButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
+        
+        editButton.addTarget(self, action: #selector(openEditTasksView), for: .touchUpInside)
+    }
+    
+    @objc private func close() {
+        dismiss(animated: true, completion: nil)
+    }
+    
+    @objc private func openEditTasksView() {
+        let editTasksVC = EditModalViewController()
+        editTasksVC.modalPresentationStyle = .formSheet
+        editTasksVC.tasks = tasks
+        
+        // 수정 완료 콜백 설정
+        editTasksVC.onTasksUpdated = { [weak self] updatedTasks in
+            self?.tasks = updatedTasks
+            self?.tableView.reloadData()
+        }
+        
+        present(editTasksVC, animated: true, completion: nil)
+    }
+    
+    // MARK: - UITableViewDataSource
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return tasks.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "taskCell") ?? UITableViewCell(style: .default, reuseIdentifier: "taskCell")
+        cell.textLabel?.text = tasks[indexPath.row]
+        return cell
+    }
+    
+    // MARK: - UITableViewDelegate
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        let alert = UIAlertController(title: "Delete Task", message: "Are you sure you want to delete \(tasks[indexPath.row])?", preferredStyle: .alert)
+        
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            self?.deleteTask(at: indexPath.row)
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        alert.addAction(deleteAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func deleteTask(at index: Int) {
+        tasks.remove(at: index)
+        tableView.reloadData()
+    }
 }
