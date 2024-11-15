@@ -9,12 +9,13 @@ import UIKit
 
 class listViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
-    // Task 데이터 소스
-    private var tasks: [String] = ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]
-    
+    // 프로젝트를 받는 변수
+    var project: Project?
+
+    private var tasks: [String] = []
     private var tableView: UITableView!
     private var editButton: UIButton!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -23,10 +24,13 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
         setupNavigationBar()
         setupTableView()
         setupEditButton()
+        
+        
+        loadTasksForProject()
     }
     
     private func setupNavigationBar() {
-        title = "Task List"
+        title = project?.projectName ?? "Task List"
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .done, target: self, action: #selector(close))
     }
     
@@ -63,6 +67,18 @@ class listViewController: UIViewController, UITableViewDataSource, UITableViewDe
         ])
         
         editButton.addTarget(self, action: #selector(openEditTasksView), for: .touchUpInside)
+    }
+    
+    private func loadTasksForProject() {
+        // project가 nil인지 확인
+        guard let projectName = project?.projectName else {
+            print("Error: project is nil")
+            return
+        }
+        
+        // projectName이 설정된 경우에만 Task를 필터링합니다.
+        tasks = DataStruct.tasks.filter { $0.taskName.contains(projectName) }.map { $0.taskName }
+        tableView.reloadData()
     }
     
     @objc private func close() {
